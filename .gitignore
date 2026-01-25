@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+/.pnp
+.pnp.js
 
 # next.js
 /.next/
@@ -16,8 +18,40 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
-.env*
+# env files (SENSITIVE - DO NOT COMMIT)
+.env
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Keep the example file
+!.env.example
+
+# Firebase (SENSITIVE - DO NOT COMMIT)
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebase/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# API Keys and Secrets
+**/serviceAccountKey.json
+**/credentials.json
+**/*-key.json
+**/*-secret.json
 
 # vercel
 .vercel

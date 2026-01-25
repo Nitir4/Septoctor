@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { LoginPage, type LoginCredentials } from "@/components/login-page"
 import { WelcomePage } from "@/components/welcome-page"
 import { DataInputPage } from "@/components/data-input-page"
 import { AssessmentForm } from "@/components/assessment-form"
@@ -81,9 +82,18 @@ export type AssessmentData = {
 }
 
 export default function SeptoctorApp() {
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(0) // Start at 0 for login
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userCredentials, setUserCredentials] = useState<LoginCredentials | null>(null)
   const [assessmentData, setAssessmentData] = useState<Partial<AssessmentData>>({})
   const [riskScore, setRiskScore] = useState<number | null>(null)
+
+  const handleLogin = (credentials: LoginCredentials) => {
+    // Store user credentials and navigate to welcome page
+    setUserCredentials(credentials)
+    setIsLoggedIn(true)
+    setCurrentPage(1) // Go to welcome page after login
+  }
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -103,6 +113,11 @@ export default function SeptoctorApp() {
   }
 
   const renderCurrentPage = () => {
+    // Show login page if not logged in
+    if (!isLoggedIn) {
+      return <LoginPage onLogin={handleLogin} />
+    }
+
     switch (currentPage) {
       case 1:
         return <WelcomePage onStart={() => handlePageChange(2)} />
