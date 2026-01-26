@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { LoginPage, type LoginCredentials } from "@/components/login-page"
-import { WelcomePage } from "@/components/welcome-page"
 import { DataInputPage } from "@/components/data-input-page"
 import { AssessmentForm } from "@/components/assessment-form"
 import { ProcessingPage } from "@/components/processing-page"
@@ -89,10 +88,10 @@ export default function SeptoctorApp() {
   const [riskScore, setRiskScore] = useState<number | null>(null)
 
   const handleLogin = (credentials: LoginCredentials) => {
-    // Store user credentials and navigate to welcome page
+    // Store user credentials and navigate to data input page
     setUserCredentials(credentials)
     setIsLoggedIn(true)
-    setCurrentPage(1) // Go to welcome page after login
+    setCurrentPage(2) // Go directly to data input page after login
   }
 
   const handlePageChange = (page: number) => {
@@ -119,10 +118,11 @@ export default function SeptoctorApp() {
     }
 
     switch (currentPage) {
-      case 1:
-        return <WelcomePage onStart={() => handlePageChange(2)} />
       case 2:
-        return <DataInputPage onManualEntry={() => handlePageChange(3)} onBack={() => handlePageChange(1)} />
+        return <DataInputPage onManualEntry={() => handlePageChange(3)} onBack={() => {
+          setIsLoggedIn(false)
+          setCurrentPage(0)
+        }} />
       case 3:
         return <AssessmentForm onSubmit={handleAssessmentSubmit} onBack={() => handlePageChange(2)} />
       case 4:
@@ -139,9 +139,12 @@ export default function SeptoctorApp() {
       case 6:
         return <DoctorInteractionPage onBack={() => handlePageChange(5)} />
       case 7:
-        return <FinalPage onRestart={() => handlePageChange(1)} onBack={() => handlePageChange(5)} />
+        return <FinalPage onRestart={() => handlePageChange(2)} onBack={() => handlePageChange(5)} />
       default:
-        return <WelcomePage onStart={() => handlePageChange(2)} />
+        return <DataInputPage onManualEntry={() => handlePageChange(3)} onBack={() => {
+          setIsLoggedIn(false)
+          setCurrentPage(0)
+        }} />
     }
   }
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,8 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Baby, Brain, Mail, Loader2 } from "lucide-react"
-import { ThemeToggle } from "./theme-toggle"
+import { Mail, Loader2 } from "lucide-react"
 import { initFirebase, googleProvider } from "@/lib/firebase"
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { toast } from "sonner"
@@ -117,20 +117,20 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <ThemeToggle />
-
-      <Card className="w-full max-w-md mx-auto shadow-2xl border-0 bg-white/95 backdrop-blur-sm dark:bg-card/95">
+    <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50">
+      <Card className="w-full max-w-md mx-auto shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
         <CardContent className="p-8 md:p-10">
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 via-teal-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
-                <Baby className="w-10 h-10 text-white" />
-              </div>
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center border-2 border-white">
-                <Brain className="w-4 h-4 text-white" />
-              </div>
+            <div className="relative w-30 h-30 md:w-36 md:h-36">
+              <Image
+                src="/new_logo.jpeg"
+                alt="Septoctor Logo"
+                width={144}
+                height={144}
+                className="w-full h-full object-contain"
+                priority
+              />
             </div>
           </div>
 
@@ -139,7 +139,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-teal-600 mb-2">
               Septoctor
             </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600">
               Clinical Decision & Support System
             </p>
           </div>
@@ -148,7 +148,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email/ID Field */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                 ID / Email
               </Label>
               <Input
@@ -157,13 +157,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 placeholder="Enter your ID or email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-11 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-cyan-500 focus:ring-cyan-500"
+                className="h-11 bg-gray-50 border-gray-200 focus:border-cyan-500 focus:ring-cyan-500"
               />
             </div>
 
             {/* Password Field */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                 Password
               </Label>
               <Input
@@ -172,17 +172,17 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-11 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-cyan-500 focus:ring-cyan-500"
+                className="h-11 bg-gray-50 border-gray-200 focus:border-cyan-500 focus:ring-cyan-500"
               />
             </div>
 
             {/* Position Field */}
             <div className="space-y-2">
-              <Label htmlFor="position" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label htmlFor="position" className="text-sm font-medium text-gray-700">
                 Position
               </Label>
               <Select value={position} onValueChange={setPosition}>
-                <SelectTrigger className="h-11 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-cyan-500 focus:ring-cyan-500">
+                <SelectTrigger className="h-11 bg-gray-50 border-gray-200 focus:border-cyan-500 focus:ring-cyan-500">
                   <SelectValue placeholder="Select your position" />
                 </SelectTrigger>
                 <SelectContent>
@@ -221,10 +221,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             {/* Divider */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200 dark:border-gray-700" />
+                <span className="w-full border-t border-gray-200" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white dark:bg-card px-2 text-gray-500">
+                <span className="bg-white px-2 text-gray-500">
                   Or continue with
                 </span>
               </div>
@@ -236,24 +236,24 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               variant="outline"
               onClick={handleGoogleLogin}
               disabled={googleLoading}
-              className="w-full h-12 border-2 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 border-2 border-gray-200 hover:bg-gray-50 font-medium text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {googleLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  <span className="text-gray-700 dark:text-gray-300">Signing in...</span>
+                  <span className="text-gray-700">Signing in...</span>
                 </>
               ) : (
                 <>
                   <Mail className="mr-2 h-5 w-5 text-red-500" />
-                  <span className="text-gray-700 dark:text-gray-300">Sign in with Gmail</span>
+                  <span className="text-gray-700">Sign in with Gmail</span>
                 </>
               )}
             </Button>
           </form>
 
           {/* Footer */}
-<div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+<div className="mt-6 text-center text-sm text-gray-600">
   <p>
     Don&apos;t have an account?{" "}
     <a
