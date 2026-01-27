@@ -263,7 +263,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 <p className="text-gray-600">Password: <span className="font-mono">Ritin@123</span></p>
               </div>
               <div className="p-2 bg-white rounded border border-amber-100">
-                <p className="font-semibold text-gray-700">State Admin (Karnataka)</p>
+                <p className="font-semibold text-gray-700">State Admin </p>
                 <p className="text-gray-600">Email: <span className="font-mono">silswalalokssgk@gmail.com</span></p>
                 <p className="text-gray-600">Password: <span className="font-mono">ssgk4624</span></p>
               </div>
