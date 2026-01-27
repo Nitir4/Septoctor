@@ -105,8 +105,9 @@ export const useAuth = () => {
         error: null
       });
 
+      // Redirect immediately after successful login
       const redirectRoute = getRedirectRoute(profile.role);
-      router.push(redirectRoute);
+      router.replace(redirectRoute);
 
       return { success: true, profile };
     } catch (error: any) {

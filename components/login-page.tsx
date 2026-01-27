@@ -41,8 +41,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     e.preventDefault()
     setError("")
 
-    if (!email || !password || !position) {
-      setError("Please fill in all fields")
+    if (!email || !password) {
+      setError("Please fill in email and password")
       return
     }
 
@@ -176,15 +176,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               />
             </div>
 
-            {/* Position Field */}
-            <div className="space-y-2">
-<<<<<<< HEAD
+            {/* Position Field - COMMENTED OUT FOR DEMO */}
+            {/* <div className="space-y-2">
               <Label htmlFor="position" className="text-sm font-medium text-gray-700">
-                Position
-=======
-              <Label htmlFor="position" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 User Role
->>>>>>> 5bf6cde (Rectified login role field in login page and input parameters in manual entry field form)
               </Label>
               <Select value={position} onValueChange={setPosition}>
                 <SelectTrigger className="h-11 bg-gray-50 border-gray-200 focus:border-cyan-500 focus:ring-cyan-500">
@@ -197,7 +192,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   <SelectItem value="CLINICIAN">Doctor</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </div> */}
 
             {/* Error Message */}
             {error && (
@@ -256,17 +251,46 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             </Button>
           </form>
 
+          {/* Demo Credentials for Judges */}
+          <div className="mt-8 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border-2 border-amber-200">
+            <h3 className="text-sm font-bold text-amber-900 mb-3 text-center">
+              🔑 Demo Credentials (For Judges)
+            </h3>
+            <div className="space-y-2 text-xs">
+              <div className="p-2 bg-white rounded border border-amber-100">
+                <p className="font-semibold text-gray-700">National Admin</p>
+                <p className="text-gray-600">Email: <span className="font-mono">er.ritsun@gmail.com</span></p>
+                <p className="text-gray-600">Password: <span className="font-mono">Ritin@123</span></p>
+              </div>
+              <div className="p-2 bg-white rounded border border-amber-100">
+                <p className="font-semibold text-gray-700">State Admin (Karnataka)</p>
+                <p className="text-gray-600">Email: <span className="font-mono">silswalalokssgk@gmail.com</span></p>
+                <p className="text-gray-600">Password: <span className="font-mono">ssgk4624</span></p>
+              </div>
+              <div className="p-2 bg-white rounded border border-amber-100">
+                <p className="font-semibold text-gray-700">Hospital Admin</p>
+                <p className="text-gray-600">Email: <span className="font-mono">sundriyalritin9757@gmail.com</span></p>
+                <p className="text-gray-600">Password: <span className="font-mono">Nitir@4</span></p>
+              </div>
+              <div className="p-2 bg-white rounded border border-amber-100">
+                <p className="font-semibold text-gray-700">Doctor/Clinician</p>
+                <p className="text-gray-600">Email: <span className="font-mono">neverhaveieverhatedmylif@gmail.com</span></p>
+                <p className="text-gray-600">Password: <span className="font-mono">Mech505</span></p>
+              </div>
+            </div>
+          </div>
+
           {/* Footer */}
-<div className="mt-6 text-center text-sm text-gray-600">
-  <p>
-    Don&apos;t have an account?{" "}
-    <a
-      href="mailto:admin@yourhospital.com"
-      className="text-cyan-600 hover:text-cyan-700 font-medium underline"
-    >
-      Contact Administrator
-    </a>
-  </p>
+          <div className="mt-6 text-center text-sm text-gray-600">
+            <p>
+              Don&apos;t have an account?{" "}
+              <a
+                href="mailto:admin@yourhospital.com"
+                className="text-cyan-600 hover:text-cyan-700 font-medium underline"
+              >
+                Contact Administrator
+              </a>
+            </p>
           </div>
         </CardContent>
       </Card>

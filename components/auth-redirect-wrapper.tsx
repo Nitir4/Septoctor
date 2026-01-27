@@ -13,10 +13,13 @@ export function AuthRedirectWrapper({ children }: { children: React.ReactNode })
   const { userProfile, loading } = useAuth();
 
   useEffect(() => {
-    if (loading) return;
+    // Only redirect if we're on the login/home page
+    if (loading || typeof window === 'undefined') return;
     
-    if (userProfile) {
-      // User is logged in, redirect to their role-specific dashboard
+    const isOnLoginPage = window.location.pathname === '/' || window.location.pathname === '/login';
+    
+    if (userProfile && isOnLoginPage) {
+      // User is logged in and on login page, redirect to their dashboard
       const roleRoutes = {
         'SUPER_ADMIN': '/dashboard/national',
         'STATE_ADMIN': '/dashboard/state',
@@ -25,8 +28,8 @@ export function AuthRedirectWrapper({ children }: { children: React.ReactNode })
       };
       
       const route = roleRoutes[userProfile.role as keyof typeof roleRoutes];
-      if (route && typeof window !== 'undefined' && !window.location.pathname.startsWith('/dashboard')) {
-        router.push(route);
+      if (route) {
+        router.replace(route);
       }
     }
   }, [userProfile, loading, router]);
