@@ -210,7 +210,7 @@ service cloud.firestore {
         (isClinician() && resource.data.assignedDoctorId == request.auth.uid)
       );
 
-      // CREATE (admins only)
+      // CREATE (admins and clinicians)
       allow create: if hasUserDoc() &&
         validPatient() &&
         (
@@ -224,6 +224,11 @@ service cloud.firestore {
           (isHospitalAdmin() &&
             request.resource.data.hospitalId == userHospital() &&
             hospitalBelongsToState(userHospital(), request.resource.data.state)
+          ) ||
+          
+          // Allow clinicians to create patients assigned to them
+          (isClinician() &&
+            request.resource.data.assignedDoctorId == request.auth.uid
           )
         );
 
@@ -327,6 +332,137 @@ service cloud.firestore {
 
       // No client writes allowed
       allow create, update, delete: if false;
+    }
+
+    /* ============================================
+       DIAGNOSES COLLECTION
+    ============================================ */
+
+    match /diagnoses/{diagnosisId} {
+
+      // READ
+      allow read: if hasUserDoc() && (
+        isSuperAdmin() ||
+        (isStateAdmin() && resource.data.state == userState()) ||
+        (isHospitalAdmin() && resource.data.hospitalId == userHospital()) ||
+        (isClinician() && resource.data.doctorId == request.auth.uid)
+      );
+
+      // CREATE (Clinicians and above can create diagnoses)
+      allow create: if hasUserDoc() &&
+        request.resource.data.keys().hasAll([
+          "patientId", "patientName", "doctorId", "doctorName",
+          "hospitalId", "state", "diagnosisType", "severity",
+          "diagnosisSummary", "treatmentPlan", "status", "diagnosisDate"
+        ]) &&
+        (
+          isSuperAdmin() ||
+
+          (isStateAdmin() &&
+            request.resource.data.state == userState() &&
+            hospitalBelongsToState(request.resource.data.hospitalId, userState())
+          ) ||
+
+          (isHospitalAdmin() &&
+            request.resource.data.hospitalId == userHospital()
+          ) ||
+
+          (isClinician() &&
+            request.resource.data.doctorId == request.auth.uid
+          )
+        );
+
+      // UPDATE (Only the doctor who created it can update, or admins)
+      allow update: if hasUserDoc() && (
+        isSuperAdmin() ||
+
+        (isStateAdmin() &&
+          resource.data.state == userState() &&
+          request.resource.data.state == userState() &&
+          hospitalBelongsToState(request.resource.data.hospitalId, userState())
+        ) ||
+
+        (isHospitalAdmin() &&
+          resource.data.hospitalId == userHospital() &&
+          request.resource.data.hospitalId == userHospital()
+        ) ||
+
+        // Clinician can only update their own diagnoses
+        (isClinician() &&
+          resource.data.doctorId == request.auth.uid &&
+          cannotChange(["doctorId", "hospitalId", "state", "patientId"])
+        )
+      );
+
+      // DELETE (Only admins can delete)
+      allow delete: if hasUserDoc() && (
+        isSuperAdmin() ||
+        (isHospitalAdmin() && resource.data.hospitalId == userHospital())
+      );
+    }
+
+    /* ============================================
+       ASSESSMENTS COLLECTION
+    ============================================ */
+
+    match /assessments/{assessmentId} {
+
+      // READ
+      allow read: if hasUserDoc() && (
+        isSuperAdmin() ||
+        (isStateAdmin() && resource.data.state == userState()) ||
+        (isHospitalAdmin() && resource.data.hospitalId == userHospital()) ||
+        (isClinician() && resource.data.doctorId == request.auth.uid)
+      );
+
+      // CREATE
+      allow create: if hasUserDoc() &&
+        request.resource.data.keys().hasAll([
+          "patientId", "hospitalId", "doctorId", "state"
+        ]) &&
+        (
+          isSuperAdmin() ||
+
+          (isStateAdmin() &&
+            request.resource.data.state == userState() &&
+            hospitalBelongsToState(request.resource.data.hospitalId, userState())
+          ) ||
+
+          (isHospitalAdmin() &&
+            request.resource.data.hospitalId == userHospital()
+          ) ||
+
+          (isClinician() &&
+            request.resource.data.doctorId == request.auth.uid &&
+            request.resource.data.hospitalId == userHospital()
+          )
+        );
+
+      // UPDATE
+      allow update: if hasUserDoc() && (
+        isSuperAdmin() ||
+
+        (isStateAdmin() &&
+          resource.data.state == userState() &&
+          request.resource.data.state == userState()
+        ) ||
+
+        (isHospitalAdmin() &&
+          resource.data.hospitalId == userHospital() &&
+          request.resource.data.hospitalId == userHospital()
+        ) ||
+
+        (isClinician() &&
+          resource.data.doctorId == request.auth.uid &&
+          cannotChange(["doctorId", "hospitalId", "state"])
+        )
+      );
+
+      // DELETE
+      allow delete: if hasUserDoc() && (
+        isSuperAdmin() ||
+        (isHospitalAdmin() && resource.data.hospitalId == userHospital())
+      );
     }
 
     /* ============================================

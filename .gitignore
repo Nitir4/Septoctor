@@ -56,6 +56,47 @@ firebase-admin-key.json
 *-admin-key.json
 seed-data-output.json
 
+# Firebase Service Account Keys (NEVER COMMIT THESE!)
+service-account-key.json
+*-service-account-key.json
+firebase-service-account-*.json
+
+# Firebase local config and cache
+.firebaserc
+firebase-debug.log*
+firestore-debug.log*
+.firebase/
+*-debug.log
+
+# Additional sensitive files
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+.env*.production
+secrets/
+private/
+
+# Seed scripts and data files (may contain sensitive hospital data)
+seed-hospital-data.js
+seed-hospital-data-free.js
+check-uploaded-data.js
+state_hospital_beds.csv
+seed-data.ts
+**/seed-*.js
+**/seed-*.ts
+
+# Utility and helper scripts
+check-*.js
+validate-*.js
+
+# Implementation and setup guides (generated docs)
+IMPLEMENTATION_SUMMARY.md
+QUICK_START.md
+SETUP_GUIDE.md
+HOSPITAL_DATA_GUIDE.md
+
 # vercel
 .vercel
 
@@ -65,14 +106,20 @@ next-env.d.ts
 
 # AI/Documentation (Optional - uncomment to hide verbose docs)
 # Uncomment lines below if you want to exclude AI-generated documentation
-# ARCHITECTURE.md
-# INTEGRATION.md
-# RBAC_SETUP.md
-# DATA_MODEL.md
-# README_RBAC.md
-# SECURITY.md
-# *_GUIDE.md
-# IMPLEMENTATION.md
+ARCHITECTURE.md
+INTEGRATION.md
+RBAC_SETUP.md
+DATA_MODEL.md
+README_RBAC.md
+SECURITY.md
+*_GUIDE.md
+IMPLEMENTATION.md
+
+IMPLEMENTATION_DETAILS.md
+QUICK_START.md
+seed-hospital-data.js
+seed-hosppital-data.js
+seed_hospital_bed.csv
 
 # AI Assistant Files (typically not needed in repo)
 .cursorrules
