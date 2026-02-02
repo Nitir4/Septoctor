@@ -99,9 +99,6 @@ export default function StateAdminDashboard() {
       const occupiedBeds = patientsList.length;
       const bedOccupancyRate = totalBeds > 0 ? parseFloat((occupiedBeds / totalBeds * 100).toFixed(1)) : 0;
 
-      // Filter out hospitals with no bed data (likely duplicates)
-      const hospitalsWithBeds = hospitalsList.filter(h => (h.totalBeds || 0) > 0 || (h.nicuBeds || 0) > 0);
-
       setStats({
         totalPatients: patientsList.length,
         criticalPatients: patientsList.filter(p => p.status === 'critical' || p.riskScore >= 0.7).length,
