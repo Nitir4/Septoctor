@@ -77,8 +77,6 @@ export default function SeptoctorApp() {
   const [mounted, setMounted] = useState(false)
   const { userProfile, loading: authLoading } = useAuth()
   const [currentPage, setCurrentPage] = useState(0) // Start at 0 for login
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [userCredentials, setUserCredentials] = useState<LoginCredentials | null>(null)
   const [assessmentData, setAssessmentData] = useState<Partial<AssessmentData>>({})
   const [riskScore, setRiskScore] = useState<number | null>(null)
   const [patientId, setPatientId] = useState<string | null>(null)
@@ -116,10 +114,9 @@ export default function SeptoctorApp() {
   }
 
   const handleLogin = (credentials: LoginCredentials) => {
-    // Store user credentials and navigate to data input page
-    setUserCredentials(credentials)
-    setIsLoggedIn(true)
-    setCurrentPage(2) // Go directly to data input page after login
+    // After successful login, userProfile will be set by useAuth
+    // Just navigate to data input page
+    setCurrentPage(2)
   }
 
   const handlePageChange = (page: number) => {
@@ -238,15 +235,24 @@ export default function SeptoctorApp() {
   }
 
   const renderCurrentPage = () => {
-    // Show login page if not logged in
-    if (!isLoggedIn) {
+    // Show login page if not authenticated in Firebase
+    // Check userProfile (from Firebase) rather than local isLoggedIn state
+    if (!userProfile && !authLoading) {
       return <LoginPage onLogin={handleLogin} />
+    }
+
+    // Show loading while checking auth
+    if (authLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-white text-xl">Checking authentication...</div>
+        </div>
+      )
     }
 
     switch (currentPage) {
       case 2:
         return <DataInputPage onManualEntry={() => handlePageChange(3)} onBack={() => {
-          setIsLoggedIn(false)
           setCurrentPage(0)
         }} />
       case 3:
