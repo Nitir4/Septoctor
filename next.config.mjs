@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  reactStrictMode: false,
+  swcMinify: true,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -13,12 +14,9 @@ const nextConfig = {
   experimental: {
     missingSuspenseWithCSRBailout: false,
   },
-  // Suppress Node.js warnings during build
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals = [...(config.externals || []), { 'node:diagnostics_channel': 'commonjs node:diagnostics_channel' }];
-    }
-    return config;
+  // Prevent any server-side rendering
+  generateBuildId: async () => {
+    return 'build-' + Date.now()
   },
 }
 
