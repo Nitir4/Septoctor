@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { Toaster } from "@/components/ui/sonner"
 import { OCRProvider } from "@/context/ocr-context"
+import ClientWrapper from "./client-wrapper"
 
 import "./globals.css"
 
@@ -23,9 +24,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <OCRProvider>
-          {children}
-        </OCRProvider>
+        <ClientWrapper>
+          <OCRProvider>
+            {children}
+          </OCRProvider>
+        </ClientWrapper>
       </body>
     </html>
   )
