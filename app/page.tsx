@@ -13,6 +13,9 @@ import { DoctorInteractionPage } from "@/components/doctor-interaction-page"
 import { FinalPage } from "@/components/final-page"
 import { useAuth } from "@/hooks/use-auth"
 import { UserRole } from "@/lib/rbac"
+import { saveAssessmentAsDiagnosis } from "@/lib/firebase-utils"
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"
+import { initFirebase } from "@/lib/firebase"
 
 export interface AssessmentData {
   
@@ -82,6 +85,9 @@ export default function SeptoctorApp() {
   const [userCredentials, setUserCredentials] = useState<LoginCredentials | null>(null)
   const [assessmentData, setAssessmentData] = useState<Partial<AssessmentData>>({})
   const [riskScore, setRiskScore] = useState<number | null>(null)
+  const [patientId, setPatientId] = useState<string | null>(null)
+  const [diagnosisId, setDiagnosisId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   // Auto-redirect only pure admin users to their dashboards
   // Hospital admins and clinicians get to choose between the dashboard and assessment workflow
@@ -110,17 +116,75 @@ export default function SeptoctorApp() {
     setCurrentPage(page)
   }
 
-  const handleAssessmentSubmit = (data: AssessmentData) => {
+  const handleAssessmentSubmit = async (data: AssessmentData) => {
     setAssessmentData(data)
     setCurrentPage(4) // Processing page
+    setSaving(true)
 
-    // Simulate AI processing
-    setTimeout(() => {
-      // Mock risk calculation
-      const mockRiskScore = Math.floor(Math.random() * 100)
-      setRiskScore(mockRiskScore)
-      setCurrentPage(5) // Results page
-    }, 3000)
+    try {
+      // Get Firebase instance
+      const { db } = initFirebase()
+      
+      if (!db) {
+        throw new Error("Firebase not initialized")
+      }
+
+      if (!userProfile) {
+        throw new Error("User not logged in")
+      }
+
+      // Create patient record first
+      const timestamp = Date.now()
+      const patientName = `Patient-${timestamp.toString().slice(-6)}`
+      
+      const patientData = {
+        name: patientName,
+        state: userProfile.state || "Unknown",
+        hospitalId: userProfile.hospitalId || "unknown",
+        assignedDoctorId: userProfile.uid,
+        assignedDoctorName: userProfile.name,
+        dateOfBirth: new Date(), // You may want to collect this from the form
+        gender: data.neonatal_sex || "unknown",
+        status: "active",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+
+      // Save patient to Firestore
+      const patientsRef = collection(db, "patients")
+      const patientDocRef = await addDoc(patientsRef, patientData)
+      const newPatientId = patientDocRef.id
+      setPatientId(newPatientId)
+
+      console.log("Patient saved with ID:", newPatientId)
+
+      // Save diagnosis with assessment data
+      const diagId = await saveAssessmentAsDiagnosis(
+        data,
+        userProfile,
+        { id: newPatientId, name: patientData.name },
+        patientData.hospitalId,
+        patientData.state
+      )
+
+      setDiagnosisId(diagId)
+      console.log("Diagnosis saved with ID:", diagId)
+
+      // Simulate AI processing
+      setTimeout(() => {
+        // Mock risk calculation
+        const mockRiskScore = Math.floor(Math.random() * 100)
+        setRiskScore(mockRiskScore)
+        setSaving(false)
+        setCurrentPage(5) // Results page
+      }, 3000)
+
+    } catch (error: any) {
+      console.error("Error saving assessment:", error)
+      alert(`Failed to save assessment: ${error.message}`)
+      setSaving(false)
+      setCurrentPage(3) // Go back to assessment form
+    }
   }
 
   const renderCurrentPage = () => {
@@ -156,7 +220,19 @@ export default function SeptoctorApp() {
           />
         );
       case 7:
-        return <FinalPage onRestart={() => handlePageChange(2)} onBack={() => handlePageChange(5)} />
+        return <FinalPage 
+          onRestart={() => {
+            // Reset state for new assessment
+            setPatientId(null)
+            setDiagnosisId(null)
+            setAssessmentData({})
+            setRiskScore(null)
+            handlePageChange(2)
+          }} 
+          onBack={() => handlePageChange(5)}
+          patientId={patientId}
+          diagnosisId={diagnosisId}
+        />
       default:
         return <DataInputPage onManualEntry={() => handlePageChange(3)} onBack={() => {
           setIsLoggedIn(false)
