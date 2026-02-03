@@ -1,5 +1,6 @@
 'use client';
 
+export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from 'react';
 import { Suspense } from 'react';
@@ -14,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, ArrowLeft } from 'lucide-react';
 
-export const dynamic = "force-dynamic";
+
 
 export default function ClinicianDashboard() {
   return (
