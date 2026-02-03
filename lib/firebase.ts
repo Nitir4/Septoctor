@@ -14,21 +14,26 @@ function initFirebase() {
 
   if (app) return { app, auth, db }
 
- const firebaseConfig = {
-  apiKey: "AIzaSyC-fkyxIV20z8DCqSL8BodEzDdDezbjFVE",
-  authDomain: "septoctor-cf82c.firebaseapp.com",
-  projectId: "septoctor-cf82c",
-  storageBucket: "septoctor-cf82c.firebasestorage.app",
-  messagingSenderId: "935827613646",
-  appId: "1:935827613646:web:bce68f9ae5e95ff84aed9f",
-  measurementId: "G-R4SPSD8MZX",
-}
+  try {
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-fkyxIV20z8DCqSL8BodEzDdDezbjFVE",
+      authDomain: "septoctor-cf82c.firebaseapp.com",
+      projectId: "septoctor-cf82c",
+      storageBucket: "septoctor-cf82c.firebasestorage.app",
+      messagingSenderId: "935827613646",
+      appId: "1:935827613646:web:bce68f9ae5e95ff84aed9f",
+      measurementId: "G-R4SPSD8MZX",
+    }
 
-  app = getApps().length ? getApp() : initializeApp(firebaseConfig)
-  auth = getAuth(app)
-  db = getFirestore(app)
+    app = getApps().length ? getApp() : initializeApp(firebaseConfig)
+    auth = getAuth(app)
+    db = getFirestore(app)
 
-  return { app, auth, db }
+    return { app, auth, db }
+  } catch (error) {
+    console.error("Firebase initialization error:", error)
+    return { app: null, auth: null, db: null }
+  }
 }
 
 // ✅ Provider must also be client-only

@@ -68,13 +68,28 @@ export const useAuth = () => {
   }, []);
 
   useEffect(() => {
+    // Only initialize on client-side
+    if (typeof window === 'undefined') return;
+    
     const { auth } = initFirebase();
     if (!auth) {
       setAuthState(prev => ({ ...prev, loading: false, error: 'Firebase not initialized' }));
       return;
     }
 
+    // Add timeout protection for auth check
+    const timeoutId = setTimeout(() => {
+      setAuthState(prev => {
+        if (prev.loading) {
+          console.error('Auth check timed out - possible Firebase quota exceeded');
+          return { ...prev, loading: false, error: 'Connection timeout. Please try again later.' };
+        }
+        return prev;
+      });
+    }, 10000); // 10 second timeout
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      clearTimeout(timeoutId);
       if (user) {
         const profile = await fetchUserProfile(user.uid);
         setAuthState({
@@ -93,7 +108,10 @@ export const useAuth = () => {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
   }, [fetchUserProfile]);
 
   const signIn = async (email: string, password: string) => {

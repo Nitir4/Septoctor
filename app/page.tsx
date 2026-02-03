@@ -74,6 +74,7 @@ export interface AssessmentData {
 
 export default function SeptoctorApp() {
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
   const { userProfile, loading: authLoading } = useAuth()
   const [currentPage, setCurrentPage] = useState(0) // Start at 0 for login
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -84,10 +85,15 @@ export default function SeptoctorApp() {
   const [diagnosisId, setDiagnosisId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
+  // Ensure client-side only rendering
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // Auto-redirect only pure admin users to their dashboards
   // Hospital admins and clinicians get to choose between the dashboard and assessment workflow
   useEffect(() => {
-    if (authLoading) return
+    if (!mounted || authLoading) return
     
     if (userProfile) {
       // Only redirect pure admin roles (national/state level)
@@ -98,7 +104,16 @@ export default function SeptoctorApp() {
       }
       // HOSPITAL_ADMIN and CLINICIAN users continue to normal flow with dashboard access
     }
-  }, [userProfile, authLoading, router])
+  }, [mounted, userProfile, authLoading, router])
+
+  // Show loading state until mounted
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-medical-blue to-medical-teal flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    )
+  }
 
   const handleLogin = (credentials: LoginCredentials) => {
     // Store user credentials and navigate to data input page
