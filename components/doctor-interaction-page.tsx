@@ -15,6 +15,7 @@ import {
   getApgar1Category,
   getApgar5Category,
 } from "@/lib/scoring"
+import { AIChatAssistant } from "@/components/ai-chat-assistant"
 
 interface DoctorInteractionPageProps {
   onBack: () => void
@@ -163,43 +164,24 @@ export function DoctorInteractionPage({ onBack, data }: DoctorInteractionPagePro
         })}
       </div>
 
-      {/* ================= CHATBOT MOCK ================= */}
+      {/* ================= AI CHAT ASSISTANT ================= */}
 
-      <Card className="mt-8 bg-white/95 backdrop-blur-sm border-0 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Brain className="w-5 h-5 mr-2 text-primary" />
-            Ask Septoctor
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg p-6">
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <p className="text-sm font-medium text-muted-foreground mb-2">Doctor:</p>
-                <p className="text-sm">Why is the MNRS high for this patient?</p>
-              </div>
-
-              <div className="bg-gradient-to-r from-primary to-accent rounded-lg p-4 text-white">
-                <p className="text-sm font-medium mb-2">Septoctor AI:</p>
-                <p className="text-sm">
-                  Elevated MNRS is driven by maternal infection indicators,
-                  neonatal vulnerability, and early clinical instability.
-                  These combined factors significantly increase sepsis risk.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button variant="outline" size="sm">Why high risk?</Button>
-              <Button variant="outline" size="sm">Treatment?</Button>
-              <Button variant="outline" size="sm">Monitoring?</Button>
-              <Button variant="outline" size="sm">Prognosis?</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="mt-8">
+        <AIChatAssistant 
+          patientContext={{
+            mnrsScore,
+            hssScore,
+            apgar1,
+            apgar5,
+            mnrsRisk: mnrsData.risk,
+            hssRisk: hssData.risk,
+            apgar1Risk: apgar1Data.risk,
+            apgar5Risk: apgar5Data.risk,
+            ...data
+          }} 
+          className="bg-white/95 backdrop-blur-sm border-0 shadow-xl"
+        />
+      </div>
     </div>
   )
 }
