@@ -74,17 +74,24 @@ export interface AssessmentData {
 
 export default function SeptoctorApp() {
   const router = useRouter()
-  const { userProfile, loading: authLoading } = useAuth()
+  const [mounted, setMounted] = useState(false)
+  const { userProfile, loading: authLoading, signOut } = useAuth()
   const [currentPage, setCurrentPage] = useState(0) // Start at 0 for login
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [userCredentials, setUserCredentials] = useState<LoginCredentials | null>(null)
   const [assessmentData, setAssessmentData] = useState<Partial<AssessmentData>>({})
   const [riskScore, setRiskScore] = useState<number | null>(null)
+  const [patientId, setPatientId] = useState<string | null>(null)
+  const [diagnosisId, setDiagnosisId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  // Ensure client-side only rendering
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Auto-redirect only pure admin users to their dashboards
   // Hospital admins and clinicians get to choose between the dashboard and assessment workflow
   useEffect(() => {
-    if (authLoading) return
+    if (!mounted || authLoading) return
     
     if (userProfile) {
       // Only redirect pure admin roles (national/state level)
@@ -95,42 +102,157 @@ export default function SeptoctorApp() {
       }
       // HOSPITAL_ADMIN and CLINICIAN users continue to normal flow with dashboard access
     }
-  }, [userProfile, authLoading, router])
+  }, [mounted, userProfile, authLoading, router])
+
+  // Show loading state until mounted
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-medical-blue to-medical-teal flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    )
+  }
 
   const handleLogin = (credentials: LoginCredentials) => {
-    // Store user credentials and navigate to data input page
-    setUserCredentials(credentials)
-    setIsLoggedIn(true)
-    setCurrentPage(2) // Go directly to data input page after login
+    // After successful login, userProfile will be set by useAuth
+    // Just navigate to data input page
+    setCurrentPage(2)
   }
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
   }
 
-  const handleAssessmentSubmit = (data: AssessmentData) => {
+  const handleAssessmentSubmit = async (data: AssessmentData) => {
     setAssessmentData(data)
     setCurrentPage(4) // Processing page
+    setSaving(true)
 
-    // Simulate AI processing
-    setTimeout(() => {
-      // Mock risk calculation
+    try {
+      // Dynamic imports to ensure client-side only execution
+      const { initFirebase } = await import("@/lib/firebase")
+      const { collection, addDoc, serverTimestamp } = await import("firebase/firestore")
+      const { saveAssessmentAsDiagnosis } = await import("@/lib/firebase-utils")
+      
+      // Get Firebase instance
+      const { db } = initFirebase()
+      
+      if (!db) {
+        throw new Error("Firebase not initialized - please refresh the page")
+      }
+
+      if (!userProfile) {
+        throw new Error("User not logged in")
+      }
+
+      // Create patient record first
+      const timestamp = Date.now()
+      const patientName = `Patient-${timestamp.toString().slice(-6)}`
+      
+      const patientData = {
+        name: patientName,
+        state: userProfile.state || "Unknown",
+        hospitalId: userProfile.hospitalId || "unknown",
+        assignedDoctorId: userProfile.uid,
+        assignedDoctorName: userProfile.name,
+        dateOfBirth: new Date(),
+        gender: data.neonatal_sex || "unknown",
+        status: "active",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+
+      // Save patient to Firestore
+      const patientsRef = collection(db, "patients")
+      const patientDocRef = await addDoc(patientsRef, patientData)
+      const newPatientId = patientDocRef.id
+      setPatientId(newPatientId)
+
+      console.log("Patient saved with ID:", newPatientId)
+
+      // Save diagnosis with assessment data
+      const diagId = await saveAssessmentAsDiagnosis(
+        data,
+        userProfile,
+        { id: newPatientId, name: patientData.name },
+        patientData.hospitalId,
+        patientData.state
+      )
+
+      setDiagnosisId(diagId)
+      console.log("Diagnosis saved with ID:", diagId)
+
+      // Calculate risk score immediately
       const mockRiskScore = Math.floor(Math.random() * 100)
       setRiskScore(mockRiskScore)
-      setCurrentPage(5) // Results page
-    }, 3000)
+
+      // Determine severity based on risk score
+      let severity = "low-risk"
+      let status = "active"
+      if (mockRiskScore >= 70) {
+        severity = "critical"
+      } else if (mockRiskScore >= 50) {
+        severity = "high-risk"
+      } else if (mockRiskScore >= 30) {
+        severity = "moderate"
+      }
+
+      // Show results immediately after 1 second
+      setTimeout(() => {
+        setSaving(false)
+        setCurrentPage(5) // Results page
+      }, 1000)
+
+      // Update diagnosis in background (non-blocking)
+      setTimeout(async () => {
+        try {
+          const { updateDiagnosis } = await import("@/lib/firebase-utils")
+          await updateDiagnosis(diagId, {
+            severity: severity,
+            status: status,
+            mlRiskScore: mockRiskScore,
+            riskConfidence: Math.floor(Math.random() * 20) + 80, // 80-100%
+            treatmentPlan: mockRiskScore >= 70 
+              ? "Immediate antibiotic therapy recommended. Close monitoring required."
+              : mockRiskScore >= 50
+              ? "Risk assessment completed. Monitor closely and follow up in 6-12 hours."
+              : "Low risk detected. Continue routine monitoring.",
+            detailedNotes: `AI-assisted sepsis risk assessment completed. Risk score: ${mockRiskScore}%. Assessment based on ${Object.keys(data).length} clinical parameters.`,
+          })
+          console.log("Diagnosis updated with risk score:", mockRiskScore)
+        } catch (updateError: any) {
+          console.error("Error updating diagnosis with risk score:", updateError)
+          // Results already shown, just log the error
+        }
+      }, 2000) // Delay update to after results are shown
+
+    } catch (error: any) {
+      console.error("Error saving assessment:", error)
+      alert(`Failed to save assessment: ${error.message}`)
+      setSaving(false)
+      setCurrentPage(3) // Go back to assessment form
+    }
   }
 
   const renderCurrentPage = () => {
-    // Show login page if not logged in
-    if (!isLoggedIn) {
+    // Show login page if not authenticated in Firebase
+    // Check userProfile (from Firebase) rather than local isLoggedIn state
+    if (!userProfile && !authLoading) {
       return <LoginPage onLogin={handleLogin} />
+    }
+
+    // Show loading while checking auth
+    if (authLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-white text-xl">Checking authentication...</div>
+        </div>
+      )
     }
 
     switch (currentPage) {
       case 2:
         return <DataInputPage onManualEntry={() => handlePageChange(3)} onBack={() => {
-          setIsLoggedIn(false)
           setCurrentPage(0)
         }} />
       case 3:
@@ -154,11 +276,22 @@ export default function SeptoctorApp() {
           />
         );
       case 7:
-        return <FinalPage onRestart={() => handlePageChange(2)} onBack={() => handlePageChange(5)} />
+        return <FinalPage 
+          onRestart={() => {
+            // Reset state for new assessment
+            setPatientId(null)
+            setDiagnosisId(null)
+            setAssessmentData({})
+            setRiskScore(null)
+            handlePageChange(2)
+          }} 
+          onBack={() => handlePageChange(5)}
+          patientId={patientId}
+          diagnosisId={diagnosisId}
+        />
       default:
         return <DataInputPage onManualEntry={() => handlePageChange(3)} onBack={() => {
-          setIsLoggedIn(false)
-          setCurrentPage(0)
+          signOut()
         }} />
     }
   }

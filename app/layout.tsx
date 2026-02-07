@@ -6,8 +6,12 @@ import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { Toaster } from "@/components/ui/sonner"
 import { OCRProvider } from "@/context/ocr-context"
+import ClientWrapper from "./client-wrapper"
 
 import "./globals.css"
+
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export const metadata: Metadata = {
   title: "Septoctor - AI Driven Sepsis Prediction",
@@ -23,9 +27,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <OCRProvider>
-          {children}
-        </OCRProvider>
+        <ClientWrapper>
+          <OCRProvider>
+            {children}
+          </OCRProvider>
+        </ClientWrapper>
       </body>
     </html>
   )

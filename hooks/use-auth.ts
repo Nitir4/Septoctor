@@ -25,7 +25,6 @@ interface AuthState {
 }
 
 export const useAuth = () => {
-  const { auth, db } = initFirebase();
   const router = useRouter();
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -36,6 +35,12 @@ export const useAuth = () => {
 
   const fetchUserProfile = useCallback(async (uid: string): Promise<UserProfile | null> => {
     try {
+      const { db } = initFirebase();
+      if (!db) {
+        console.error('Firebase not initialized');
+        return null;
+      }
+      
       const userDocRef = doc(db, 'users', uid);
       const userDoc = await getDoc(userDocRef);
 
@@ -60,10 +65,31 @@ export const useAuth = () => {
       console.error('Error fetching user profile:', error);
       return null;
     }
-  }, [db]);
+  }, []);
 
   useEffect(() => {
+    // Only initialize on client-side
+    if (typeof window === 'undefined') return;
+    
+    const { auth } = initFirebase();
+    if (!auth) {
+      setAuthState(prev => ({ ...prev, loading: false, error: 'Firebase not initialized' }));
+      return;
+    }
+
+    // Add timeout protection for auth check
+    const timeoutId = setTimeout(() => {
+      setAuthState(prev => {
+        if (prev.loading) {
+          console.error('Auth check timed out - possible Firebase quota exceeded');
+          return { ...prev, loading: false, error: 'Connection timeout. Please try again later.' };
+        }
+        return prev;
+      });
+    }, 10000); // 10 second timeout
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      clearTimeout(timeoutId);
       if (user) {
         const profile = await fetchUserProfile(user.uid);
         setAuthState({
@@ -82,13 +108,19 @@ export const useAuth = () => {
       }
     });
 
-    return () => unsubscribe();
-  }, [auth, fetchUserProfile]);
+    return () => {
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
+  }, [fetchUserProfile]);
 
   const signIn = async (email: string, password: string) => {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
+      const { auth } = initFirebase();
+      if (!auth) throw new Error('Firebase not initialized');
+      
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
@@ -129,6 +161,9 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
+      const { auth } = initFirebase();
+      if (!auth) throw new Error('Firebase not initialized');
+      
       await firebaseSignOut(auth);
       setAuthState({
         user: null,

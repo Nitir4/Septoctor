@@ -154,3 +154,31 @@ IMPLEMENTATION.md
 docs/api/generated/
 api-docs.json
 swagger.json
+
+# Additional Sensitive Data Protection
+# Firebase configuration files (may contain project IDs)
+firebase.json
+firestore.rules
+firestore.indexes.json
+
+# Dataset and CSV files (may contain sensitive training/hospital data)
+dataset/*.csv
+dataset/**/*.csv
+
+# Backend Python files
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/**/*.pyo
+backend/.pytest_cache/
+backend/**/.ipynb_checkpoints/
+
+# Jupyter Notebooks (may contain sensitive output)
+notebooks/*.ipynb
+notebooks/**/*.ipynb
+
+# All Markdown documentation files
+*.md
+!README.md
+# README.md is kept for repository overview
