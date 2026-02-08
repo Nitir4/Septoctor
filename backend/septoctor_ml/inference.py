@@ -1,5 +1,3 @@
-# backend/septoctor_ml/inference.py
-
 import json
 import joblib
 import numpy as np
@@ -7,95 +5,118 @@ import pandas as pd
 import shap
 from pathlib import Path
 
-from septoctor_ml.utils import normalize_raw_input, CONTINUOUS_FEATURES
+from septoctor_ml.feature_mapper import map_ui_to_model
 
-# ---- Load artifacts (ONCE) ----
+# ======================================================
+# Load artifacts ONCE at startup
+# ======================================================
+
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 ARTIFACTS_DIR = BASE_DIR / "artifacts"
 
-MODEL_PATH = ARTIFACTS_DIR / "septoctor_rf_model.joblib"
-SCALER_PATH = ARTIFACTS_DIR / "septoctor_scaler.joblib"
-OHE_PATH = ARTIFACTS_DIR / "septoctor_ohe.joblib"
+PKL_PATH = ARTIFACTS_DIR / "septoctor_lr.pkl"
 FEATURE_ORDER_PATH = ARTIFACTS_DIR / "feature_order.json"
+SHAP_BG_PATH = ARTIFACTS_DIR / "shap_background.npy"
 
+# ---- Load trained model artifact ----
+artifact = joblib.load(PKL_PATH)
 
-model = joblib.load(MODEL_PATH)
-scaler = joblib.load(SCALER_PATH)
-ohe = joblib.load(OHE_PATH)
+model = artifact["model"]
+KS_THRESHOLD = artifact["ks_threshold"]
+MODERATE_THRESHOLD = artifact["moderate_threshold"]
 
+# ---- Load feature order ----
 with open(FEATURE_ORDER_PATH, "r") as f:
-    FEATURE_ORDER = json.load(f)
+    FEATURE_ORDER = json.load(f)["feature_order"]
 
-explainer = shap.TreeExplainer(model)
+# ---- Load SHAP background ----
+X_background = pd.DataFrame(
+    np.load(SHAP_BG_PATH),
+    columns=FEATURE_ORDER
+)
+
+# ---- Initialize SHAP explainer (ONCE) ----
+explainer = shap.LinearExplainer(
+    model,
+    X_background,
+    feature_perturbation="interventional"
+)
+
+# ======================================================
+# Preprocessing (STRICT: no scaling, no encoding)
+# ======================================================
+
+def preprocess(model_ready_input: dict) -> pd.DataFrame:
+    """
+    model_ready_input: numeric, model-space features
+    """
+    df = pd.DataFrame([model_ready_input])
+
+    # Fill missing with 0 (clinical baseline)
+    df = df.fillna(0)
+
+    # Enforce exact feature order
+    df = df[FEATURE_ORDER]
+
+    return df
 
 
-def preprocess(raw_input: dict) -> pd.DataFrame:
-    normalized = normalize_raw_input(raw_input)
-    df = pd.DataFrame([normalized])
-
-    # ----- Continuous scaling -----
-    cont_df = df[CONTINUOUS_FEATURES].copy()
-
-    # Replace None with scaler mean (baseline → 0 after scaling)
-    for i, col in enumerate(CONTINUOUS_FEATURES):
-        cont_df[col] = cont_df[col].fillna(scaler.mean_[i])
-
-    cont_scaled = scaler.transform(cont_df)
-    cont_scaled_df = pd.DataFrame(
-        cont_scaled,
-        columns=CONTINUOUS_FEATURES
-    )
-
-    # ----- Non-scaled numeric & binary -----
-    other_numeric_cols = [
-        c for c in df.columns
-        if c not in CONTINUOUS_FEATURES
-        and c not in ohe.feature_names_in_
-    ]
-    other_numeric_df = df[other_numeric_cols].astype(float)
-
-    # ----- Categorical encoding -----
-    cat_df = df[ohe.feature_names_in_]
-    cat_encoded = ohe.transform(cat_df)
-    cat_encoded_df = pd.DataFrame(
-        cat_encoded,
-        columns=ohe.get_feature_names_out(ohe.feature_names_in_)
-    )
-
-    # ----- Combine -----
-    X = pd.concat(
-        [other_numeric_df, cont_scaled_df, cat_encoded_df],
-        axis=1
-    )
-
-    # ----- Enforce feature order -----
-    X = X[FEATURE_ORDER]
-
-    return X
-
+# ======================================================
+# Prediction + Explainability
+# ======================================================
 
 def predict_with_explainability(raw_input: dict) -> dict:
-    X = preprocess(raw_input)
+    """
+    raw_input: UI-level semantic input (strings, numbers)
+    """
 
-    probability = float(model.predict_proba(X)[0, 1])
+    # ---- Step 1: UI → model feature mapping ----
+    model_input = map_ui_to_model(raw_input)
 
-    shap_values = explainer.shap_values(X)
-    shap_sample = shap_values[1][0]
+    # ---- Step 2: preprocess ----
+    X = preprocess(model_input)
 
-    shap_df = pd.DataFrame({
-        "feature": X.columns,
-        "shap_value": shap_sample
-    })
+    # ---- Step 3: probability ----
+    p = float(model.predict_proba(X)[0, 1])
 
-    top_contributors = (
-        shap_df[shap_df.shap_value > 0]
-        .sort_values("shap_value", ascending=False)
-        .head(5)
-    )
+    # ---- Step 4: binary decision ----
+    sepsis_label = int(p >= KS_THRESHOLD)
 
+    # ---- Step 5: risk bucket ----
+    if p >= KS_THRESHOLD:
+        risk_bucket = "High"
+    elif p >= MODERATE_THRESHOLD:
+        risk_bucket = "Moderate"
+    else:
+        risk_bucket = "Low"
+
+    # ---- Step 6: confidence ----
+    confidence = abs(p - KS_THRESHOLD)
+
+    # ---- Step 7: SHAP explainability ----
+    shap_values = explainer.shap_values(X)[0]
+    shap_dict = dict(zip(FEATURE_ORDER, shap_values))
+
+    # Top-5 contributors by absolute impact
+    top5 = sorted(
+        shap_dict.items(),
+        key=lambda x: abs(x[1]),
+        reverse=True
+    )[:5]
+
+    shap_ui = [
+        {
+            "feature": feature,
+            "impact": float(value)
+        }
+        for feature, value in top5
+    ]
+
+    # ---- Final response ----
     return {
-        "sepsis_probability": round(probability, 4),
-        "risk_label": "HIGH" if probability >= 0.5 else "LOW",
-        "top_contributing_factors": top_contributors.to_dict(orient="records")
+        "sepsis_probability": round(p, 4),
+        "sepsis_label": sepsis_label,
+        "risk_bucket": risk_bucket,
+        "confidence": round(confidence, 4),
+        "shap": shap_ui
     }
